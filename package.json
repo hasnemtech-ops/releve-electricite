@@ -18,6 +18,7 @@
   "build": {
     "appId": "tech.hasnem.releveelec",
     "productName": "Relevé Électricité",
+    "publish": null,
     "directories": { "output": "dist" },
     "files": ["main.js", "assets/**/*"],
     "win": {
