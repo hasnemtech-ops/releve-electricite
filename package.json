@@ -1,0 +1,44 @@
+{
+  "name": "releve-electricite",
+  "version": "1.1.0",
+  "description": "Facturation électricité et eau par sous-compteurs — hasnemtech",
+  "main": "main.js",
+  "author": "hasnemtech",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win --x64",
+    "dist:mac": "electron-builder --mac"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "tech.hasnem.releveelec",
+    "productName": "Relevé Électricité",
+    "directories": { "output": "dist" },
+    "files": ["main.js", "assets/**/*"],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "assets/icone.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Relevé Électricité"
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] }
+      ],
+      "icon": "assets/icone.png",
+      "category": "public.app-category.business"
+    }
+  }
+}

@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Relevé — Factures d'électricité</title>
+<style>
+:root{
+  --nuit:#10211F;
+  --petrole:#1D4D4F;
+  --petrole-clair:#E4EDEB;
+  --papier:#F4F3EE;
+  --carte:#FFFFFF;
+  --encre:#16241F;
+  --gris:#6B7A76;
+  --trait:#DDE2DE;
+  --signal:#C4432A;
+  --ok:#2E6B4F;
+  --mono:ui-monospace,"SF Mono","Roboto Mono",Menlo,Consolas,monospace;
+  --texte:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--texte);background:var(--papier);color:var(--encre);
+  font-size:16px;line-height:1.45;padding-bottom:78px;
+}
+h1,h2,h3{margin:0;font-weight:650;letter-spacing:-.02em}
+button{font-family:inherit;font-size:1rem;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font-family:inherit;font-size:1rem;width:100%;padding:.7rem .8rem;
+  border:1px solid var(--trait);border-radius:10px;background:var(--carte);color:var(--encre)}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--petrole);outline-offset:1px}
+label{display:block;font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--gris);margin:0 0 .3rem;font-weight:600}
+.champ{margin-bottom:.9rem}
+.rangee{display:flex;gap:.7rem}
+.rangee>*{flex:1}
+
+/* ---------- en-tête ---------- */
+header{background:var(--nuit);color:#EDF2F0;padding:1.1rem 1.1rem .95rem;
+  position:sticky;top:0;z-index:20}
+header .eyebrow{font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;
+  color:#7FA39C;font-weight:600}
+header h1{font-size:1.35rem;margin-top:.1rem}
+header .retour{font-size:.85rem;color:#9DBDB6;margin-bottom:.35rem;display:inline-block}
+
+main{padding:1.1rem}
+
+/* ---------- cartes ---------- */
+.carte{background:var(--carte);border:1px solid var(--trait);border-radius:14px;
+  padding:1rem;margin-bottom:.85rem}
+.carte.cliquable:active{background:#F7F9F8}
+.carte-titre{display:flex;justify-content:space-between;align-items:baseline;gap:.6rem}
+.carte-titre strong{font-size:1.05rem}
+.sous{font-size:.85rem;color:var(--gris)}
+
+/* ---------- bandeau compteur (élément signature) ---------- */
+.compteur{background:var(--nuit);border-radius:12px;padding:.85rem .9rem;margin-bottom:.85rem}
+.compteur .ligne{display:flex;justify-content:space-between;align-items:center;
+  color:#8FB2AB;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;font-weight:600}
+.chiffres{font-family:var(--mono);font-size:2rem;font-weight:600;color:#F2F7F5;
+  letter-spacing:.14em;font-variant-numeric:tabular-nums;margin-top:.15rem}
+.chiffres .unite{font-size:.85rem;letter-spacing:.05em;color:#7FA39C;margin-left:.35rem}
+
+/* ---------- boutons ---------- */
+.btn{display:block;width:100%;padding:.85rem;border-radius:11px;font-weight:650;
+  background:var(--petrole);color:#fff;text-align:center;margin-top:.5rem}
+.btn:active{background:#173C3E}
+.btn.secondaire{background:var(--petrole-clair);color:var(--petrole)}
+.btn.fantome{background:none;border:1px solid var(--trait);color:var(--encre)}
+.btn.danger{background:none;color:var(--signal);border:1px solid #EBC7BF}
+.btn-rangee{display:flex;gap:.6rem}
+.btn-rangee .btn{margin-top:.5rem}
+
+/* ---------- tableau relevé ---------- */
+.releve{width:100%;border-collapse:collapse;font-size:.9rem}
+.releve th{font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:var(--gris);
+  text-align:right;padding:.4rem .3rem;font-weight:600;border-bottom:1px solid var(--trait)}
+.releve th:first-child{text-align:left}
+.releve td{padding:.5rem .3rem;text-align:right;border-bottom:1px solid var(--trait);
+  font-variant-numeric:tabular-nums}
+.releve td:first-child{text-align:left}
+.releve input{padding:.45rem .4rem;text-align:right;font-family:var(--mono);
+  font-variant-numeric:tabular-nums}
+.conso{font-family:var(--mono);font-weight:650}
+.montant{font-family:var(--mono);font-weight:650;color:var(--petrole)}
+
+.etiquette-payee{flex:1;margin-top:.5rem;padding:.85rem;border-radius:11px;
+  background:#E8F2EC;color:var(--ok);font-weight:650;text-align:center;font-size:.92rem}
+.regle{background:#E8F2EC;border:1px solid #BFDCCC;color:#1F5238;
+  border-radius:10px;padding:.6rem .8rem;margin-top:.7rem;font-size:.9rem;text-align:center}
+.segments{display:flex;gap:.4rem;background:#EAEEEC;border-radius:12px;padding:.3rem;margin-bottom:.9rem}
+.segments button{flex:1;padding:.6rem .4rem;border-radius:9px;font-size:.85rem;font-weight:650;
+  color:var(--gris);line-height:1.25}
+.segments button.actif{background:var(--carte);color:var(--petrole);
+  box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.alerte{background:#FDF1EE;border:1px solid #EBC7BF;color:#8C2E1B;
+  border-radius:10px;padding:.7rem .8rem;font-size:.88rem;margin-bottom:.85rem}
+.info{background:var(--petrole-clair);border-radius:10px;padding:.7rem .8rem;
+  font-size:.88rem;margin-bottom:.85rem;color:#123B3D}
+.vide{text-align:center;color:var(--gris);padding:2.2rem 1rem}
+.vide p{margin:.3rem 0 1rem}
+
+/* ---------- navigation ---------- */
+nav{position:fixed;bottom:0;left:0;right:0;background:var(--carte);
+  border-top:1px solid var(--trait);display:flex;z-index:30;
+  padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;padding:.7rem .3rem .8rem;font-size:.72rem;font-weight:600;
+  color:var(--gris);letter-spacing:.04em}
+nav button.actif{color:var(--petrole)}
+nav button .pastille{display:block;height:3px;width:26px;margin:0 auto .38rem;
+  border-radius:2px;background:transparent}
+nav button.actif .pastille{background:var(--petrole)}
+
+/* ---------- facture ---------- */
+#zone-facture{display:none}
+.facture{background:#fff;padding:1.2rem;border:1px solid var(--trait);border-radius:14px}
+.facture .entete{border-bottom:2px solid var(--nuit);padding-bottom:.7rem;margin-bottom:.9rem}
+.facture .entete h2{font-size:1.15rem}
+.facture .num{font-family:var(--mono);font-size:.8rem;color:var(--gris);letter-spacing:.06em}
+.facture table{width:100%;border-collapse:collapse;margin:.8rem 0;font-size:.9rem}
+.facture th,.facture td{padding:.45rem .3rem;text-align:right;border-bottom:1px solid var(--trait)}
+.facture th:first-child,.facture td:first-child{text-align:left}
+.facture th{font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:var(--gris)}
+.total-du{display:flex;justify-content:space-between;align-items:center;
+  background:var(--nuit);color:#fff;border-radius:11px;padding:.8rem .9rem;margin-top:.6rem}
+.total-du span{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:#8FB2AB}
+.total-du strong{font-family:var(--mono);font-size:1.5rem;letter-spacing:.02em}
+.echeance{border:1px dashed var(--signal);color:#8C2E1B;border-radius:10px;
+  padding:.6rem .8rem;margin-top:.7rem;font-size:.9rem;text-align:center}
+.mention{font-size:.75rem;color:var(--gris);margin-top:.9rem;line-height:1.5}
+
+@media print{
+  body{background:#fff;padding:0}
+  header,nav,.non-imprimable{display:none !important}
+  main{padding:0}
+  .facture{border:none;border-radius:0;padding:0}
+  .total-du{background:#fff;color:#000;border:2px solid #000}
+  .total-du span{color:#444}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div id="fil"></div>
+  <div class="eyebrow" id="eyebrow">Relevé</div>
+  <h1 id="titre">Mois facturés</h1>
+</header>
+
+<main id="vue"></main>
+
+<nav id="nav">
+  <button data-onglet="periodes"><span class="pastille"></span>Mois</button>
+  <button data-onglet="locataires"><span class="pastille"></span>Locataires</button>
+  <button data-onglet="reglages"><span class="pastille"></span>Réglages</button>
+</nav>
+
+<script>
+/* =========================================================
+   ÉTAT ET PERSISTANCE
+   ========================================================= */
+const CLE = 'releve.electricite.v1';
+const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet',
+              'Août','Septembre','Octobre','Novembre','Décembre'];
+const SERVICES = {
+  electricite: { id:'electricite', label:'Électricité', icone:'⚡', unite:'kWh',
+                 factureNom:'CEET', fraisLibelleDefaut:'Frais de règlement CEET',
+                 prefixeFacture:'ELEC' },
+  eau:         { id:'eau', label:'Eau', icone:'💧', unite:'m³',
+                 factureNom:'TdE', fraisLibelleDefaut:'Frais de règlement TdE',
+                 prefixeFacture:'EAU' }
+};
+function svc(s){ return SERVICES[s] || SERVICES.electricite; }
+
+const REGLAGES_DEFAUT = { nom:'', telephone:'', adresse:'' };
+const id = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+/* ---------- licence ---------- */
+const CLE_LICENCE = 'releve.electricite.licence';
+const CONTACT_TEL = '22893346814';       // WhatsApp HASNEM
+const PRIX_MONO = 3000;              // FCFA/an — Électricité seule OU Eau seule (1 compteur)
+const PRIX_GENERAL = 5000;           // FCFA/an — Général : électricité + eau (2 compteurs inclus)
+const PRIX_COMPTEUR_SUPP = 1000;     // FCFA/an — par compteur ajouté, quel que soit le plan
+const PLANS_LICENCE = {
+  electricite: { code:'E', label:'Électricité seule', services:['electricite'], compteursInclus:1 },
+  eau:         { code:'A', label:'Eau seule',          services:['eau'],         compteursInclus:1 },
+  general:     { code:'G', label:'Général (électricité + eau)', services:['electricite','eau'], compteursInclus:2 }
+};
+const PLAN_PAR_CODE = { E:'electricite', A:'eau', G:'general' };
+const DUREE_ESSAI_JOURS = 30;
+const SECRET_LICENCE = 'HT-RELEVELEC-2026'; // doit rester identique dans generateur-licence.html
+
+let etat = charger();
+let licence = chargerLicence();
+let onglet = 'periodes';
+let periodeOuverte = null;   // id de la période en cours d'édition
+let factureOuverte = null;   // {periodeId, locataireId}
+let envoiMasseActif = null;  // {pid, index} pendant l'envoi groupé
+
+function reglagesServiceDefaut(sid){
+  return { arrondi:5, fraisDefaut:0, fraisLibelle: svc(sid).fraisLibelleDefaut,
+           modeDefaut:'repartition', puDefaut:0 };
+}
+
+/** Migration : complète toute sauvegarde (ancienne ou nouvelle) vers la structure
+ *  multi-compteurs / multi-services. Utilisé au démarrage ET lors d'un import. */
+function migrer(d){
+  d.bailleur = Object.assign({}, REGLAGES_DEFAUT, d.bailleur || {});
+  d.locataires = d.locataires || [];
+  d.periodes = d.periodes || [];
+  if(d.derniereSauvegardeLe === undefined) d.derniereSauvegardeLe = null;
+
+  if(!d.compteurs || !d.compteurs.length){
+    // Sauvegarde antérieure à la gestion multi-compteurs : les réglages qui
+    // vivaient dans "bailleur" deviennent le premier (et seul) compteur.
+    const ancien = d.bailleur || {};
+    const c0 = {
+      id: id(), nom: 'Compteur principal',
+      arrondi: Number(ancien.arrondi) || 5,
+      fraisDefaut: Number(ancien.fraisDefaut) || 0,
+      fraisLibelle: ancien.fraisLibelle || 'Frais de règlement CEET',
+      modeDefaut: ancien.modeDefaut || 'repartition',
+      puDefaut: Number(ancien.puDefaut) || 0
+    };
+    d.compteurs = [c0];
+    d.compteurActif = c0.id;
+    d.locataires.forEach(l => { if(!l.compteurId) l.compteurId = c0.id; });
+    d.periodes.forEach(p => { if(!p.compteurId) p.compteurId = c0.id; });
+  }
+  // Ces réglages vivent désormais par compteur, plus dans le bailleur.
+  delete d.bailleur.arrondi; delete d.bailleur.fraisDefaut;
+  delete d.bailleur.fraisLibelle; delete d.bailleur.modeDefaut; delete d.bailleur.puDefaut;
+
+  // Chaque compteur a désormais des réglages distincts par service (électricité / eau) :
+  // avant, un compteur ne portait qu'un seul jeu de réglages (implicitement l'électricité).
+  d.compteurs.forEach(c => {
+    if(!c.services){
+      c.services = {
+        electricite: {
+          arrondi: Number(c.arrondi) || 5,
+          fraisDefaut: Number(c.fraisDefaut) || 0,
+          fraisLibelle: c.fraisLibelle || SERVICES.electricite.fraisLibelleDefaut,
+          modeDefaut: c.modeDefaut || 'repartition',
+          puDefaut: Number(c.puDefaut) || 0
+        },
+        eau: reglagesServiceDefaut('eau')
+      };
+      delete c.arrondi; delete c.fraisDefaut; delete c.fraisLibelle;
+      delete c.modeDefaut; delete c.puDefaut;
+    }
+  });
+
+  // Chaque locataire a un index de départ par service : avant, un seul index
+  // existait (celui de l'électricité).
+  d.locataires.forEach(l => {
+    if(l.indexDepartElec === undefined){
+      l.indexDepartElec = Number(l.indexDepart) || 0;
+      l.indexDepartEau = Number(l.indexDepartEau) || 0;
+      delete l.indexDepart;
+    }
+  });
+
+  // Chaque mois appartient désormais à un service : avant, tous les mois
+  // enregistrés étaient implicitement de l'électricité.
+  d.periodes.forEach(p => {
+    if(!p.service) p.service = 'electricite';
+    if(p.montant === undefined) p.montant = Number(p.montantCEET) || 0;
+    delete p.montantCEET;
+  });
+  if(!d.serviceActif || !SERVICES[d.serviceActif]) d.serviceActif = 'electricite';
+
+  if(!d.compteurActif || !d.compteurs.some(x => x.id === d.compteurActif)){
+    d.compteurActif = d.compteurs[0].id;
+  }
+  d.periodes = d.periodes.map(p => {
+    const cpt = d.compteurs.find(x => x.id === p.compteurId) || d.compteurs[0];
+    const cfg = cpt.services[p.service] || reglagesServiceDefaut(p.service);
+    return Object.assign({ frais: Number(cfg.fraisDefaut) || 0, mode:'repartition', puFixe:0 }, p);
+  });
+  return d;
+}
+function charger(){
+  try{
+    const brut = localStorage.getItem(CLE);
+    if(brut) return migrer(JSON.parse(brut));
+  }catch(e){ console.warn('Lecture impossible', e); }
+  return migrer({ bailleur:{}, locataires:[], periodes:[] });
+}
+function enregistrer(){
+  try{ localStorage.setItem(CLE, JSON.stringify(etat)); }
+  catch(e){ alert("Enregistrement impossible. La mémoire de l'appareil est peut-être pleine."); }
+}
+function compteurDe(cid){
+  return etat.compteurs.find(c => c.id === cid) || etat.compteurs[0];
+}
+
+/* =========================================================
+   LICENCE — essai d'un mois puis abonnement annuel (1000 FCFA)
+   Verrouillage par appareil, activation manuelle par code (pas de
+   serveur : HASNEM génère le code avec generateur-licence.html
+   à la réception du paiement, en échange de l'identifiant appareil).
+   ========================================================= */
+function nouvelIdentifiantAppareil(){
+  if(window.crypto && crypto.randomUUID) return crypto.randomUUID().slice(0,8).toUpperCase();
+  return (Date.now().toString(36) + Math.random().toString(36).slice(2,8)).toUpperCase();
+}
+function chargerLicence(){
+  try{
+    const brut = localStorage.getItem(CLE_LICENCE);
+    if(brut) return JSON.parse(brut);
+  }catch(e){ /* on repart d'un état neuf */ }
+  // Pendant l'essai, l'appareil a accès à tout (électricité + eau, 1 compteur)
+  // pour permettre d'évaluer l'application avant de choisir une formule.
+  const neuve = { deviceId: nouvelIdentifiantAppareil(), installDate: new Date().toISOString().slice(0,10),
+                  dateFin: null, compteursAutorises: 1, plan: 'general' };
+  localStorage.setItem(CLE_LICENCE, JSON.stringify(neuve));
+  return neuve;
+}
+function enregistrerLicence(){ localStorage.setItem(CLE_LICENCE, JSON.stringify(licence)); }
+
+/** Hash déterministe simple (FNV-1a 32 bits) — pas de la cryptographie forte,
+ *  juste de quoi empêcher qu'un code circule d'un appareil à l'autre. */
+function hash32(txt){
+  let h = 0x811c9dc5;
+  for(let i = 0; i < txt.length; i++){ h ^= txt.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return (h >>> 0).toString(16).padStart(8,'0').toUpperCase();
+}
+function codeAttendu(deviceId, finAAAAMMJJ, nCompteurs, codePlan){
+  return hash32(deviceId + '|' + finAAAAMMJJ + '|' + nCompteurs + '|' + codePlan + '|' + SECRET_LICENCE);
+}
+function licenceInfo(){
+  const auj = new Date(new Date().toDateString());
+  const finEssai = new Date(licence.installDate + 'T00:00:00');
+  finEssai.setDate(finEssai.getDate() + DUREE_ESSAI_JOURS);
+  const essaiActif = auj <= finEssai;
+  const abonneActif = !!(licence.dateFin && auj <= new Date(licence.dateFin + 'T00:00:00'));
+  const joursRestantsEssai = Math.ceil((finEssai - auj) / 86400000);
+  const plan = PLANS_LICENCE[licence.plan] || PLANS_LICENCE.general;
+  return { essaiActif, abonneActif, actif: essaiActif || abonneActif,
+           joursRestantsEssai, dateFin: licence.dateFin || null,
+           compteursAutorises: licence.compteursAutorises || 1,
+           servicesAutorises: plan.services, planLabel: plan.label };
+}
+function messageActivationWhatsApp(){
+  return "Bonjour, je souhaite activer ma licence pour l'application Relevé Électricité.\n" +
+    "Identifiant appareil : " + licence.deviceId + "\n\n" +
+    "Formules :\n" +
+    "• Électricité seule — " + nb(PRIX_MONO) + " FCFA/an (1 compteur)\n" +
+    "• Eau seule — " + nb(PRIX_MONO) + " FCFA/an (1 compteur)\n" +
+    "• Général, électricité + eau — " + nb(PRIX_GENERAL) + " FCFA/an (2 compteurs inclus)\n" +
+    "• Compteur supplémentaire — " + nb(PRIX_COMPTEUR_SUPP) + " FCFA/an, quel que soit le plan";
+}
+function copierIdentifiant(){
+  if(navigator.clipboard) navigator.clipboard.writeText(licence.deviceId).then(() => alert('Identifiant copié.'));
+  else prompt('Copie cet identifiant :', licence.deviceId);
+}
+function activerLicence(){
+  const champ = document.getElementById('code-licence');
+  const brut = (champ ? champ.value : '').toUpperCase().replace(/[^0-9A-Z-]/g,'');
+  const m = brut.match(/^(\d{8})-(\d{1,2})-([EAG])-([0-9A-F]{8})$/);
+  if(!m){ alert("Code invalide. Vérifie qu'il est recopié exactement, tel qu'il t'a été envoyé."); return; }
+  const [, fin, nStr, codePlan, hash] = m;
+  const n = Number(nStr);
+  if(hash !== codeAttendu(licence.deviceId, fin, n, codePlan)){
+    alert("Ce code ne correspond pas à cet appareil. Vérifie que l'identifiant envoyé était bien le bon.");
+    return;
+  }
+  const dateFin = fin.slice(0,4) + '-' + fin.slice(4,6) + '-' + fin.slice(6,8);
+  if(new Date(dateFin + 'T00:00:00') < new Date(new Date().toDateString())){
+    alert('Ce code correspond à une date déjà passée.'); return;
+  }
+  licence.dateFin = dateFin;
+  licence.compteursAutorises = n;
+  licence.plan = PLAN_PAR_CODE[codePlan];
+  enregistrerLicence();
+  const planLabel = PLANS_LICENCE[licence.plan].label;
+  alert('Licence activée jusqu\'au ' + dateLongue(dateFin) + ' — ' + planLabel
+      + ', ' + n + ' compteur' + (n>1?'s':'') + ' autorisé' + (n>1?'s':'') + '. Merci !');
+  rendre();
+}
+
+/* =========================================================
+   CALCULS
+   ========================================================= */
+const nb = n => new Intl.NumberFormat('fr-FR').format(Math.round(n||0));
+const dec = n => new Intl.NumberFormat('fr-FR',{maximumFractionDigits:2}).format(n||0);
+
+function arrondir(montant, compteurId, service){
+  const pas = Number(compteurDe(compteurId).services[service].arrondi) || 1;
+  return Math.round(montant / pas) * pas;
+}
+
+/** Index de départ d'un locataire pour une période :
+ *  le nouvel index de la période précédente (même service), sinon son index d'installation. */
+function ancienIndexAuto(periode, locataireId){
+  const anterieures = etat.periodes
+    .filter(p => p.id !== periode.id && p.compteurId === periode.compteurId
+              && p.service === periode.service && rang(p) < rang(periode))
+    .sort((a,b) => rang(b) - rang(a));
+  for(const p of anterieures){
+    const r = p.releves[locataireId];
+    if(r && r.nouveau !== '' && r.nouveau != null) return Number(r.nouveau);
+  }
+  const loc = etat.locataires.find(l => l.id === locataireId);
+  if(!loc) return 0;
+  return Number((periode.service === 'eau' ? loc.indexDepartEau : loc.indexDepartElec) || 0);
+}
+const rang = p => p.annee * 12 + p.mois;
+
+/** Cœur du calcul : consommations, prix unitaire, parts. */
+function calculer(periode){
+  const compteur = compteurDe(periode.compteurId);
+  const reglages = compteur.services[periode.service] || reglagesServiceDefaut(periode.service);
+  const locsCompteur = etat.locataires.filter(l => l.compteurId === periode.compteurId);
+  const lignes = locsCompteur.map(loc => {
+    const r = periode.releves[loc.id] || {};
+    const ancien = (r.ancien === '' || r.ancien == null) ? ancienIndexAuto(periode, loc.id) : Number(r.ancien);
+    const nouveau = (r.nouveau === '' || r.nouveau == null) ? null : Number(r.nouveau);
+    const conso = nouveau === null ? null : nouveau - ancien;
+    return { loc, ancien, nouveau, conso, regleLe: r.regleLe || null, envoyeeLe: r.envoyeeLe || null };
+  });
+
+  const totalConso = lignes.reduce((s,l) => s + (l.conso > 0 ? l.conso : 0), 0);
+  const montant = Number(periode.montant) || 0;
+  const mode = periode.mode === 'fixe' ? 'fixe' : 'repartition';
+
+  // Répartition : le prix découle de la facture (CEET ou TdE selon le service).
+  // Prix fixe : le bailleur impose son tarif, la facture ne sert qu'à comparer.
+  const pu = mode === 'fixe'
+    ? (Number(periode.puFixe) || 0)
+    : (totalConso > 0 ? montant / totalConso : 0);
+
+  const frais = Number(periode.frais) || 0;
+  lignes.forEach(l => {
+    l.brut = (l.conso > 0 ? l.conso : 0) * pu;
+    l.part = arrondir(l.brut, periode.compteurId, periode.service);  // quote-part du service
+    l.frais = frais;                // frais fixes, hors répartition
+    l.total = l.part + frais;       // ce que le locataire doit
+  });
+
+  const totalFacture = lignes.reduce((s,l) => s + l.part, 0);
+  const facturables = lignes.filter(l => l.nouveau !== null && l.conso >= 0);
+  const totalFrais = frais * facturables.length;
+  const totalAEncaisser = facturables.reduce((s,l) => s + l.total, 0);
+  const encaisse = facturables.filter(l => l.regleLe).reduce((s,l) => s + l.total, 0);
+  const reste = facturables.filter(l => !l.regleLe).reduce((s,l) => s + l.total, 0);
+  const nbPayes = facturables.filter(l => l.regleLe).length;
+
+  // Compteur principal : écart entre ce que la facture globale a compté et la somme des sous-compteurs
+  let consoPrincipal = null, ecartKwh = null;
+  const pa = periode.indexPrincipalAncien, pn = periode.indexPrincipalNouveau;
+  if(pa !== '' && pa != null && pn !== '' && pn != null){
+    consoPrincipal = Number(pn) - Number(pa);
+    ecartKwh = consoPrincipal - totalConso;
+  }
+
+  const anomalies = lignes.filter(l => l.conso !== null && l.conso < 0);
+  const manquants = lignes.filter(l => l.nouveau === null);
+
+  // En mode fixe, l'écart avec la facture globale est une marge, pas une erreur d'arrondi.
+  const marge = (mode === 'fixe' && montant > 0) ? totalFacture - montant : null;
+
+  return { lignes, totalConso, montant, pu, mode, marge,
+           totalFacture, facturables,
+           frais, totalFrais, totalAEncaisser, encaisse, reste, nbPayes,
+           ecartFCFA: totalFacture - montant, consoPrincipal, ecartKwh,
+           anomalies, manquants, service: periode.service,
+           unite: svc(periode.service).unite, factureNom: svc(periode.service).factureNom,
+           fraisLibelle: reglages.fraisLibelle, arrondi: reglages.arrondi };
+}
+
+/* =========================================================
+   RENDU
+   ========================================================= */
+const vue = document.getElementById('vue');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+let focusCle = null;   // champ à re-sélectionner après un rendu
+let focusPos = null;   // position du curseur dans ce champ
+
+function rendre(){
+  const nav = document.getElementById('nav');
+  if(!licenceInfo().actif){
+    nav.style.display = 'none';
+    document.getElementById('fil').innerHTML = '';
+    vueVerrouillage();
+    return;
+  }
+  nav.style.display = '';
+
+  const autorises = licenceInfo().servicesAutorises;
+  if(!autorises.includes(etat.serviceActif)) etat.serviceActif = autorises[0];
+
+  document.querySelectorAll('#nav button').forEach(b =>
+    b.classList.toggle('actif', b.dataset.onglet === onglet && !periodeOuverte && !factureOuverte));
+  document.getElementById('fil').innerHTML = '';
+
+  if(factureOuverte) vueFacture();
+  else if(envoiMasseActif) vueEnvoiMasse();
+  else if(periodeOuverte) vuePeriode();
+  else if(onglet === 'periodes') vuePeriodes();
+  else if(onglet === 'locataires') vueLocataires();
+  else vueReglages();
+
+  if(focusCle){
+    const n = vue.querySelector('[data-cle="' + focusCle + '"]');
+    if(n){
+      n.focus();
+      const pos = focusPos === null ? n.value.length : Math.min(focusPos, n.value.length);
+      try{ n.setSelectionRange(pos, pos); }catch(e){ /* champ non positionnable */ }
+    }
+    focusCle = null; focusPos = null;
+  }
+}
+function entete(eyebrow, titre, retour){
+  document.getElementById('eyebrow').textContent = eyebrow;
+  document.getElementById('titre').textContent = titre;
+  document.getElementById('fil').innerHTML = retour
+    ? '<a class="retour" href="#" onclick="revenir();return false">‹ ' + esc(retour) + '</a>' : '';
+}
+function selecteurCompteur(){
+  if(etat.compteurs.length <= 1) return '';
+  return `<div class="segments">
+    ${etat.compteurs.map(c => `<button class="${c.id===etat.compteurActif?'actif':''}"
+      onclick="choisirCompteur('${c.id}')">${esc(c.nom || 'Sans nom')}</button>`).join('')}
+  </div>`;
+}
+function choisirCompteur(cid){
+  etat.compteurActif = cid; enregistrer(); rendre(); window.scrollTo(0,0);
+}
+function selecteurService(){
+  const autorises = licenceInfo().servicesAutorises;
+  return `<div class="segments">
+    ${Object.values(SERVICES).map(s => {
+      const ok = autorises.includes(s.id);
+      return `<button class="${s.id===etat.serviceActif?'actif':''}"
+        onclick="choisirService('${s.id}')">${s.icone} ${esc(s.label)}${ok ? '' : ' 🔒'}</button>`;
+    }).join('')}
+  </div>`;
+}
+function choisirService(sid){
+  if(!licenceInfo().servicesAutorises.includes(sid)){ demanderChangementPlan(sid); return; }
+  etat.serviceActif = sid; enregistrer(); rendre(); window.scrollTo(0,0);
+}
+function demanderChangementPlan(sidDemande){
+  const info = licenceInfo();
+  const msg = "Bonjour, je souhaite passer à l'abonnement Général (électricité + eau) pour l'application Relevé Électricité.\n" +
+    "Identifiant appareil : " + licence.deviceId + "\n" +
+    "Abonnement actuel : " + info.planLabel + "\n" +
+    "Tarif du Général : " + nb(PRIX_GENERAL) + " FCFA/an (2 compteurs inclus).";
+  const lien = 'https://wa.me/' + CONTACT_TEL + '?text=' + encodeURIComponent(msg);
+  const ouvrir = confirm(
+    "Le service " + svc(sidDemande).label + " n'est pas inclus dans ton abonnement actuel (" + info.planLabel + ").\n\n" +
+    "Il faut passer à l'abonnement Général (" + nb(PRIX_GENERAL) + " FCFA/an, électricité + eau, 2 compteurs inclus) pour y avoir accès.\n\n" +
+    "Contacter HASNEM par WhatsApp pour changer d'abonnement ?"
+  );
+  if(ouvrir) window.open(lien, '_blank');
+}
+function revenir(){
+  if(factureOuverte) factureOuverte = null;
+  else if(envoiMasseActif) envoiMasseActif = null;
+  else periodeOuverte = null;
+  rendre(); window.scrollTo(0,0);
+}
+
+/* ---------- liste des mois ---------- */
+function rappelSauvegarde(){
+  if(!etat.periodes.length) return '';
+  const jours = etat.derniereSauvegardeLe
+    ? Math.floor((new Date(new Date().toDateString()) - new Date(etat.derniereSauvegardeLe + 'T00:00:00')) / 86400000)
+    : Infinity;
+  if(jours <= 45) return '';
+  return `<div class="alerte" style="margin-bottom:.9rem;cursor:pointer" onclick="onglet='reglages';rendre()">
+    ${etat.derniereSauvegardeLe ? 'Aucune sauvegarde depuis ' + jours + ' jours' : 'Aucune sauvegarde n\u2019a jamais été faite'} — touche pour exporter tes données dans Réglages.
+  </div>`;
+}
+function vuePeriodes(){
+  const s = svc(etat.serviceActif);
+  entete('Relevé', s.label + ' — Mois facturés');
+  const locsCompteur = etat.locataires.filter(l => l.compteurId === etat.compteurActif);
+  const ps = etat.periodes
+    .filter(p => p.compteurId === etat.compteurActif && p.service === etat.serviceActif)
+    .sort((a,b) => rang(b) - rang(a));
+  const entete2 = rappelSauvegarde() + selecteurCompteur() + selecteurService();
+
+  if(!locsCompteur.length){
+    vue.innerHTML = entete2 + `<div class="vide">
+      <h3>Commence par tes locataires</h3>
+      <p>Ajoute les logements et leurs index de départ. Ensuite tu pourras ouvrir un mois.</p>
+      <button class="btn" onclick="onglet='locataires';rendre()">Ajouter un locataire</button>
+    </div>`;
+    return;
+  }
+  if(!ps.length){
+    vue.innerHTML = entete2 + `<div class="vide">
+      <h3>Aucun mois enregistré</h3>
+      <p>Ouvre un mois, saisis le montant de la facture ${esc(s.factureNom)}, puis relève les compteurs.</p>
+      <button class="btn" onclick="nouvellePeriode()">Ouvrir un mois</button>
+    </div>`;
+    return;
+  }
+  vue.innerHTML = entete2 + ps.map(p => {
+    const c = calculer(p);
+    const reste = c.manquants.length;
+    return `<div class="carte cliquable" onclick="ouvrirPeriode('${p.id}')">
+      <div class="carte-titre">
+        <strong>${MOIS[p.mois]} ${p.annee}</strong>
+        <span class="montant">${nb(p.montant)} F</span>
+      </div>
+      <div class="sous">
+        ${c.totalConso > 0 ? nb(c.totalConso)+' '+c.unite+' · '+dec(c.pu)+' F/'+c.unite : 'Relevés en attente'}
+        ${reste ? ' · <span style="color:var(--signal)">'+reste+' compteur'+(reste>1?'s':'')+' à relever</span>' : ''}
+      </div>
+      ${c.facturables.length ? `<div class="sous" style="margin-top:.35rem">
+        ${c.reste === 0
+          ? '<span style="color:var(--ok);font-weight:650">Tout est payé</span>'
+          : '<span style="color:var(--signal);font-weight:650">Reste '+nb(c.reste)+' F</span> · '
+            + c.nbPayes + '/' + c.facturables.length + ' payés'}
+      </div>` : ''}
+    </div>`;
+  }).join('') + `<button class="btn" onclick="nouvellePeriode()">Ouvrir un mois</button>`;
+}
+
+function nouvellePeriode(){
+  const cid = etat.compteurActif;
+  const sid = etat.serviceActif;
+  const cpt = compteurDe(cid);
+  const cfg = cpt.services[sid] || reglagesServiceDefaut(sid);
+  const d = new Date();
+  let m = d.getMonth() - 1, a = d.getFullYear();
+  if(m < 0){ m = 11; a--; }
+  while(etat.periodes.some(p => p.compteurId === cid && p.service === sid && p.mois === m && p.annee === a)){
+    m++; if(m > 11){ m = 0; a++; }
+  }
+  const p = { id:id(), compteurId: cid, service: sid, mois:m, annee:a, montant:'', dateLimite:'',
+              mode: cfg.modeDefaut || 'repartition',
+              puFixe: Number(cfg.puDefaut) || 0,
+              frais: Number(cfg.fraisDefaut) || 0,
+              indexPrincipalAncien:'', indexPrincipalNouveau:'', releves:{} };
+  etat.periodes.push(p); enregistrer();
+  ouvrirPeriode(p.id);
+}
+function ouvrirPeriode(pid){ periodeOuverte = pid; rendre(); window.scrollTo(0,0); }
+
+/* ---------- saisie d'un mois ---------- */
+function articleDe(sid){ return "d'" + svc(sid).label.toLowerCase(); }   // "d'électricité" / "d'eau"
+function articleL(sid){ return "l'" + svc(sid).label.toLowerCase(); }    // "l'électricité" / "l'eau"
+
+function vuePeriode(){
+  const p = etat.periodes.find(x => x.id === periodeOuverte);
+  if(!p){ periodeOuverte = null; return rendre(); }
+  const c = calculer(p);
+  entete('Mois', svc(p.service).icone + ' ' + MOIS[p.mois] + ' ' + p.annee, 'Mois facturés');
+
+  const optMois = MOIS.map((m,i) =>
+    `<option value="${i}" ${i===p.mois?'selected':''}>${m}</option>`).join('');
+
+  vue.innerHTML = `
+  <div class="compteur">
+    <div class="ligne"><span>${c.mode === 'fixe' ? 'Prix unitaire appliqué' : 'Prix unitaire du mois'}</span><span>${nb(c.totalConso)} ${c.unite}</span></div>
+    <div class="chiffres">${c.pu ? dec(c.pu) : '—'}<span class="unite">FCFA / ${c.unite}</span></div>
+  </div>
+
+  <div class="segments">
+    <button class="${c.mode === 'repartition' ? 'actif' : ''}"
+      onclick="majPeriode('mode','repartition')">Répartir la facture ${esc(c.factureNom)}</button>
+    <button class="${c.mode === 'fixe' ? 'actif' : ''}"
+      onclick="majPeriode('mode','fixe')">Prix unitaire fixe</button>
+  </div>
+
+  <div class="carte">
+    <div class="rangee">
+      <div class="champ"><label>Mois</label>
+        <select onchange="majPeriode('mois', +this.value)">${optMois}</select></div>
+      <div class="champ" style="max-width:110px"><label>Année</label>
+        <input type="number" value="${p.annee}" onchange="majPeriode('annee', +this.value)"></div>
+    </div>
+
+    ${c.mode === 'fixe' ? `
+      <div class="champ"><label>Prix unitaire (FCFA / ${c.unite})</label>
+        <input type="number" inputmode="decimal" step="any" value="${p.puFixe || ''}"
+          placeholder="0" onchange="majPeriode('puFixe', this.value)"></div>
+      <div class="champ"><label>Montant de la facture ${esc(c.factureNom)} — facultatif</label>
+        <input type="text" inputmode="numeric" data-cle="montant" value="${p.montant}"
+          placeholder="0" oninput="majMontant(this)">
+        <p class="sous" style="margin:.35rem 0 0">Sert seulement à comparer ce que tu factures à ce que tu paies. N'apparaît pas sur les factures.</p></div>
+    ` : `
+      <div class="champ"><label>Montant de la facture ${esc(c.factureNom)} (FCFA)</label>
+        <input type="text" inputmode="numeric" data-cle="montant" value="${p.montant}"
+          placeholder="0" oninput="majMontant(this)"></div>
+    `}
+
+    <div class="champ"><label>${esc(c.fraisLibelle)} — par facture</label>
+      <input type="number" inputmode="numeric" value="${p.frais || 0}"
+        placeholder="0" onchange="majPeriode('frais', this.value)">
+      <p class="sous" style="margin:.35rem 0 0">Ajouté tel quel à chaque facture, en plus de la quote-part ${articleDe(p.service)}.</p></div>
+    <div class="champ" style="margin-bottom:0"><label>Date limite de paiement</label>
+      <input type="date" value="${p.dateLimite}" onchange="majPeriode('dateLimite', this.value)"></div>
+  </div>
+
+  ${c.anomalies.length ? `<div class="alerte"><strong>Index incohérent</strong><br>
+    ${c.anomalies.map(l => esc(l.loc.nom)+" : le nouvel index est inférieur à l'ancien.").join('<br>')}</div>` : ''}
+
+  <h3 style="margin:1.3rem 0 .6rem;font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;color:var(--gris)">Relevé des sous-compteurs</h3>
+  <div class="carte" style="padding:.7rem .8rem">
+    <table class="releve">
+      <thead><tr><th>Logement</th><th>Ancien</th><th>Nouveau</th><th>${esc(c.unite)}</th><th>À payer</th></tr></thead>
+      <tbody>
+        ${c.lignes.map(l => `<tr>
+          <td><strong>${esc(l.loc.nom)}</strong><br><span class="sous">${esc(l.loc.logement||'')}</span></td>
+          <td style="width:70px"><input type="number" inputmode="numeric" value="${l.ancien}"
+              onchange="majReleve('${l.loc.id}','ancien',this.value)"></td>
+          <td style="width:70px"><input type="number" inputmode="numeric"
+              value="${l.nouveau === null ? '' : l.nouveau}" placeholder="—"
+              onchange="majReleve('${l.loc.id}','nouveau',this.value)"></td>
+          <td class="conso">${l.conso === null ? '—' : nb(l.conso)}</td>
+          <td class="montant">${l.nouveau === null ? '—' : nb(l.total)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="carte">
+    <div class="carte-titre"><span class="sous">Total consommé</span>
+      <strong class="conso">${nb(c.totalConso)} ${c.unite}</strong></div>
+    <div class="carte-titre" style="margin-top:.4rem"><span class="sous">${esc(svc(p.service).label)} facturée</span>
+      <strong class="montant">${nb(c.totalFacture)} F</strong></div>
+    ${c.totalFrais ? `<div class="carte-titre" style="margin-top:.4rem">
+      <span class="sous">${esc(c.fraisLibelle)} (${c.facturables.length} × ${nb(c.frais)})</span>
+      <strong class="montant">${nb(c.totalFrais)} F</strong></div>
+    <div class="carte-titre" style="margin-top:.4rem">
+      <span class="sous">Total à encaisser</span>
+      <strong class="montant">${nb(c.totalAEncaisser)} F</strong></div>` : ''}
+    ${c.mode === 'fixe'
+      ? (c.marge !== null ? `<div class="carte-titre" style="margin-top:.7rem;padding-top:.7rem;border-top:1px solid var(--trait)">
+          <span class="sous">${c.marge >= 0 ? "Marge sur " + articleL(p.service) : "Perte sur " + articleL(p.service)}</span>
+          <strong class="montant" style="color:${c.marge>=0?'var(--ok)':'var(--signal)'}">${c.marge>0?'+':''}${nb(c.marge)} F</strong></div>` : '')
+      : (c.ecartFCFA !== 0 && c.totalConso > 0 ? `<div class="carte-titre" style="margin-top:.4rem">
+          <span class="sous">Écart d'arrondi sur ${articleL(p.service)}</span>
+          <strong style="color:${c.ecartFCFA>0?'var(--ok)':'var(--signal)'}">${c.ecartFCFA>0?'+':''}${nb(c.ecartFCFA)} F</strong></div>` : '')}
+    ${c.facturables.length ? `
+      <div class="carte-titre" style="margin-top:.7rem;padding-top:.7rem;border-top:1px solid var(--trait)">
+        <span class="sous">Encaissé</span>
+        <strong class="montant" style="color:var(--ok)">${nb(c.encaisse)} F</strong></div>
+      <div class="carte-titre" style="margin-top:.4rem">
+        <span class="sous">Reste à recouvrer</span>
+        <strong class="montant" style="color:${c.reste?'var(--signal)':'var(--ok)'}">${nb(c.reste)} F</strong></div>` : ''}
+  </div>
+
+  <details class="carte non-imprimable">
+    <summary style="font-weight:650;cursor:pointer">Compteur principal (facultatif)</summary>
+    <p class="sous" style="margin:.6rem 0 .8rem">Compare ce que ${esc(c.factureNom)} a compté à la somme de tes sous-compteurs. N'entre pas dans le calcul des factures.</p>
+    <div class="rangee">
+      <div class="champ"><label>Ancien index</label>
+        <input type="number" inputmode="numeric" value="${p.indexPrincipalAncien}"
+          onchange="majPeriode('indexPrincipalAncien', this.value)"></div>
+      <div class="champ"><label>Nouvel index</label>
+        <input type="number" inputmode="numeric" value="${p.indexPrincipalNouveau}"
+          onchange="majPeriode('indexPrincipalNouveau', this.value)"></div>
+    </div>
+    ${c.ecartKwh !== null ? `<div class="info" style="margin:0">
+      Compteur principal : <strong>${nb(c.consoPrincipal)} ${c.unite}</strong> — sous-compteurs : <strong>${nb(c.totalConso)} ${c.unite}</strong>.<br>
+      Parties communes et pertes : <strong>${nb(c.ecartKwh)} ${c.unite}</strong>${c.consoPrincipal>0?' ('+dec(c.ecartKwh/c.consoPrincipal*100)+' %)':''}.
+    </div>` : ''}
+  </details>
+
+  <h3 style="margin:1.3rem 0 .6rem;font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;color:var(--gris)">Factures</h3>
+  ${c.facturables.length ? `<button class="btn secondaire" onclick="demarrerEnvoiMasse('${p.id}')">Envoyer toutes les factures</button>` : ''}
+  ${c.facturables.map(l => `
+    <div class="carte">
+      <div onclick="ouvrirFacture('${p.id}','${l.loc.id}')" style="cursor:pointer">
+        <div class="carte-titre"><strong>${esc(l.loc.nom)}</strong>
+          <span class="montant">${nb(l.total)} F</span></div>
+        <div class="sous">${nb(l.conso)} ${c.unite}${l.frais ? ' + ' + nb(l.frais) + ' F de frais' : ''} · voir la facture ›</div>
+        ${l.envoyeeLe ? '<div class="sous" style="color:var(--ok);margin-top:.15rem">Envoyée le '+dateCourte(l.envoyeeLe)+'</div>' : ''}
+      </div>
+      ${l.regleLe
+        ? `<div class="btn-rangee">
+             <div class="etiquette-payee">Payé le ${dateCourte(l.regleLe)}</div>
+             <button class="btn fantome" style="flex:0 0 auto;padding:.55rem .9rem"
+               onclick="basculerReglement('${l.loc.id}')">Annuler</button>
+           </div>`
+        : `<button class="btn secondaire" onclick="basculerReglement('${l.loc.id}')">Marquer comme payé</button>`}
+    </div>`).join('') || '<p class="sous">Saisis les nouveaux index pour générer les factures.</p>'}
+
+  ${c.facturables.length ? `<button class="btn secondaire" style="margin-top:1.4rem" onclick="enregistrerReleveMois('${p.id}')">Enregistrer le relevé du mois (image)</button>` : ''}
+  <button class="btn danger" style="margin-top:${c.facturables.length?'.6rem':'1.4rem'}" onclick="supprimerPeriode('${p.id}')">Supprimer ce mois</button>
+  `;
+}
+
+function majMontant(champ){
+  const p = etat.periodes.find(x => x.id === periodeOuverte);
+  const pos = champ.selectionStart;
+  const propre = champ.value.replace(/[^0-9]/g, '');   // on ne garde que les chiffres
+  const retires = champ.value.length - propre.length;  // décalage si des caractères ont sauté
+  p.montant = propre;
+  enregistrer();
+  focusCle = 'montant';
+  focusPos = Math.max(0, pos - retires);
+  rendre();
+}
+function majPeriode(champ, valeur){
+  const p = etat.periodes.find(x => x.id === periodeOuverte);
+  p[champ] = valeur; enregistrer(); rendre();
+}
+function majReleve(locId, champ, valeur){
+  const p = etat.periodes.find(x => x.id === periodeOuverte);
+  if(!p.releves[locId]) p.releves[locId] = { ancien:'', nouveau:'' };
+  if(p.releves[locId].ancien === '' || p.releves[locId].ancien == null)
+    p.releves[locId].ancien = ancienIndexAuto(p, locId);
+  p.releves[locId][champ] = valeur === '' ? '' : Number(valeur);
+  enregistrer(); rendre();
+}
+function basculerReglement(locId){
+  const p = etat.periodes.find(x => x.id === periodeOuverte);
+  if(!p.releves[locId]) p.releves[locId] = { ancien:'', nouveau:'' };
+  p.releves[locId].regleLe = p.releves[locId].regleLe
+    ? null
+    : new Date().toISOString().slice(0,10);
+  enregistrer(); rendre();
+}
+function dateCourte(iso){
+  if(!iso) return '';
+  return new Date(iso + 'T00:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
+}
+function dateLongue(iso){
+  if(!iso) return '';
+  return new Date(iso + 'T00:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+}
+function supprimerPeriode(pid){
+  if(!confirm('Supprimer ce mois et tous ses relevés ?')) return;
+  etat.periodes = etat.periodes.filter(p => p.id !== pid);
+  enregistrer(); periodeOuverte = null; rendre();
+}
+
+/* ---------- facture ---------- */
+/* ---------- envoi groupé ---------- */
+function demarrerEnvoiMasse(pid){
+  envoiMasseActif = { pid, index: 0 };
+  rendre(); window.scrollTo(0,0);
+}
+
+function vueEnvoiMasse(){
+  const p = etat.periodes.find(x => x.id === envoiMasseActif.pid);
+  if(!p){ envoiMasseActif = null; return rendre(); }
+  const c = calculer(p);
+  entete('Envoi groupé', MOIS[p.mois] + ' ' + p.annee, 'Mois facturés');
+
+  const total = c.facturables.length;
+  const i = Math.min(envoiMasseActif.index, total - 1);
+  const l = c.facturables[i];
+
+  if(!l){
+    vue.innerHTML = `<div class="vide">
+      <h3>Rien à envoyer</h3>
+      <p>Aucune facture n'est encore générée pour ce mois.</p>
+      <button class="btn" onclick="envoiMasseActif=null;rendre()">Retour</button>
+    </div>`;
+    return;
+  }
+
+  const restants = c.facturables.filter((x,idx) => idx >= i && !x.envoyeeLe).length;
+
+  vue.innerHTML = `
+  <div class="compteur">
+    <div class="ligne"><span>Progression</span><span>${i+1} / ${total}</span></div>
+    <div class="chiffres" style="font-size:1.4rem">${esc(l.loc.nom)}</div>
+  </div>
+
+  <div class="carte">
+    <div class="carte-titre"><strong>${esc(l.loc.nom)}</strong>
+      <span class="montant">${nb(l.total)} F</span></div>
+    <div class="sous">${nb(l.conso)} ${c.unite}${l.frais ? ' + '+nb(l.frais)+' F de frais' : ''}</div>
+    ${l.loc.telephone ? '' : `<div class="alerte" style="margin-top:.7rem">
+      Aucun numéro enregistré pour ce locataire. WhatsApp s'ouvrira sans conversation ciblée — choisis le contact manuellement.</div>`}
+    ${l.envoyeeLe ? `<div class="info" style="margin-top:.7rem">Déjà envoyée le ${dateCourte(l.envoyeeLe)}. Tu peux la renvoyer si besoin.</div>` : ''}
+  </div>
+
+  <button class="btn" onclick="envoyerEtAvancer('${p.id}','${l.loc.id}')">
+    Envoyer à ${esc(l.loc.nom)}
+  </button>
+  <div class="btn-rangee">
+    <button class="btn fantome" onclick="avancerEnvoiMasse()">Passer</button>
+    <button class="btn fantome" onclick="reculerEnvoiMasse()">Précédent</button>
+  </div>
+
+  <p class="sous" style="text-align:center;margin-top:1rem">
+    ${restants > 1 ? (restants - 1) + ' facture' + (restants>2?'s':'') + ' restante' + (restants>2?'s':'') + ' après celle-ci' : 'Dernière facture de la liste'}
+  </p>`;
+}
+
+function envoyerEtAvancer(pid, lid){
+  envoyerImage(pid, lid);
+  // On avance tout de suite : WhatsApp exige une confirmation humaine qu'on ne peut pas
+  // détecter depuis l'application. La facture reste marquée "Envoyée" et peut être
+  // renvoyée depuis la liste du mois si elle n'est finalement pas partie.
+  setTimeout(avancerEnvoiMasse, 300);
+}
+function avancerEnvoiMasse(){
+  const p = etat.periodes.find(x => x.id === envoiMasseActif.pid);
+  const total = calculer(p).facturables.length;
+  if(envoiMasseActif.index >= total - 1){
+    const pid = envoiMasseActif.pid;
+    envoiMasseActif = null;
+    enregistrerReleveMois(pid);  // le mois vient d'être bouclé : on garde une trace
+  }
+  else envoiMasseActif.index += 1;
+  rendre(); window.scrollTo(0,0);
+}
+function reculerEnvoiMasse(){
+  envoiMasseActif.index = Math.max(0, envoiMasseActif.index - 1);
+  rendre(); window.scrollTo(0,0);
+}
+
+function ouvrirFacture(pid, lid){ factureOuverte = {pid, lid}; rendre(); window.scrollTo(0,0); }
+
+function donneesFacture(pid, lid){
+  const cible = pid && lid ? {pid, lid} : factureOuverte;
+  const p = etat.periodes.find(x => x.id === cible.pid);
+  const c = calculer(p);
+  const l = c.lignes.find(x => x.loc.id === cible.lid);
+  const locsCompteur = etat.locataires.filter(x => x.compteurId === p.compteurId);
+  const rangLoc = locsCompteur.findIndex(x => x.id === cible.lid) + 1;
+  const numero = svc(p.service).prefixeFacture + '-' + p.annee + String(p.mois+1).padStart(2,'0') + '-' + String(rangLoc).padStart(2,'0');
+  return {p, c, l, numero};
+}
+
+function vueFacture(){
+  const {p, c, l, numero} = donneesFacture();
+  const b = etat.bailleur;
+  entete('Facture', l.loc.nom, MOIS[p.mois] + ' ' + p.annee);
+  const limite = dateLongue(p.dateLimite);
+
+  vue.innerHTML = `
+  <div class="facture" id="facture">
+    <div class="entete">
+      <h2>${esc(b.nom || ('Facture ' + svc(p.service).label.toLowerCase()))}</h2>
+      <div class="sous">${esc(b.adresse||'')}${b.adresse && b.telephone ? ' · ' : ''}${esc(b.telephone||'')}</div>
+      <div class="num" style="margin-top:.5rem">${numero} · ${MOIS[p.mois]} ${p.annee}</div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;gap:1rem;font-size:.9rem">
+      <div><span class="sous">Locataire</span><br><strong>${esc(l.loc.nom)}</strong>
+        ${l.loc.logement ? '<br>'+esc(l.loc.logement) : ''}</div>
+      <div style="text-align:right"><span class="sous">Établie le</span><br>
+        ${new Date().toLocaleDateString('fr-FR')}</div>
+    </div>
+
+    <table>
+      <thead><tr><th>Désignation</th><th>Valeur</th></tr></thead>
+      <tbody>
+        <tr><td>Ancien index</td><td class="conso">${nb(l.ancien)} ${c.unite}</td></tr>
+        <tr><td>Nouvel index</td><td class="conso">${nb(l.nouveau)} ${c.unite}</td></tr>
+        <tr><td><strong>Consommation du mois</strong></td>
+            <td class="conso"><strong>${nb(l.conso)} ${c.unite}</strong></td></tr>
+        <tr><td>Prix unitaire</td><td class="conso">${dec(c.pu)} FCFA / ${c.unite}</td></tr>
+        <tr><td>${nb(l.conso)} ${c.unite} × ${dec(c.pu)} FCFA</td>
+            <td class="montant">${nb(l.part)} FCFA</td></tr>
+        ${l.frais ? `<tr><td>${esc(c.fraisLibelle)}</td>
+            <td class="montant">+ ${nb(l.frais)} FCFA</td></tr>` : ''}
+      </tbody>
+    </table>
+
+    <div class="total-du"><span>${l.regleLe ? 'Montant réglé' : 'Montant à payer'}</span><strong>${nb(l.total)} F</strong></div>
+    ${l.regleLe
+      ? `<div class="regle">Réglé le <strong>${dateLongue(l.regleLe)}</strong> — merci.</div>`
+      : (limite ? `<div class="echeance">À régler au plus tard le <strong>${limite}</strong></div>` : '')}
+
+    <p class="mention">${esc(mentionFacture(c))}</p>
+  </div>
+
+  <div class="non-imprimable">
+    <button class="btn" onclick="envoyerImage('${p.id}','${l.loc.id}')">Envoyer l'image par WhatsApp</button>
+    <div class="btn-rangee">
+      <button class="btn secondaire" onclick="enregistrerImage('${p.id}','${l.loc.id}')">Enregistrer l'image</button>
+      <button class="btn fantome" onclick="apercuImage('${p.id}','${l.loc.id}')">Aperçu</button>
+    </div>
+    <div id="apercu" style="margin-top:.9rem"></div>
+    <div class="btn-rangee">
+      <button class="btn fantome" onclick="window.print()">Imprimer / PDF</button>
+      <button class="btn fantome" onclick="copierTexte()">Copier le texte</button>
+    </div>
+  </div>`;
+}
+
+function mentionFacture(c){
+  if(c.mode === 'fixe')
+    return 'Prix unitaire appliqué : ' + dec(c.pu) + ' FCFA le ' + c.unite + '. '
+         + 'Montant arrondi au ' + c.arrondi + ' FCFA le plus proche.';
+  return 'Prix unitaire calculé sur la facture ' + c.factureNom + ' du mois : ' + nb(c.montant)
+       + ' FCFA pour ' + nb(c.totalConso) + ' ' + c.unite + ' relevés sur l\u2019ensemble des sous-compteurs, soit '
+       + dec(c.pu) + ' FCFA le ' + c.unite + '. Montant arrondi au ' + c.arrondi + ' FCFA le plus proche.';
+}
+
+/* ---------- facture en image ---------- */
+function couperTexte(x, texte, largeur){
+  const mots = String(texte).split(' ');
+  const lignes = []; let cur = '';
+  for(const m of mots){
+    const essai = cur ? cur + ' ' + m : m;
+    if(x.measureText(essai).width > largeur && cur){ lignes.push(cur); cur = m; }
+    else cur = essai;
+  }
+  if(cur) lignes.push(cur);
+  return lignes;
+}
+function rectArrondi(x, gx, gy, l, h, r){
+  x.beginPath();
+  x.moveTo(gx+r, gy);
+  x.arcTo(gx+l, gy, gx+l, gy+h, r);
+  x.arcTo(gx+l, gy+h, gx, gy+h, r);
+  x.arcTo(gx, gy+h, gx, gy, r);
+  x.arcTo(gx, gy, gx+l, gy, r);
+  x.closePath();
+}
+
+const SANS = '-apple-system, system-ui, "Segoe UI", Roboto, sans-serif';
+const MONO = 'ui-monospace, "Roboto Mono", Menlo, Consolas, monospace';
+
+function imageFacture(pid, lid){
+  const {p, c, l, numero} = donneesFacture(pid, lid);
+  const b = etat.bailleur;
+  const L = 1080, marge = 72, largeurUtile = L - marge*2;
+
+  // --- mesure de la mention de bas de page pour connaître la hauteur finale
+  const mesure = document.createElement('canvas').getContext('2d');
+  mesure.font = '24px ' + SANS;
+  const mention = mentionFacture(c);
+  const lignesMention = couperTexte(mesure, mention, largeurUtile);
+  const hauteur = 1160 + (l.frais ? 68 : 0) + lignesMention.length * 36 + 60;
+
+  const cv = document.createElement('canvas');
+  cv.width = L; cv.height = hauteur;
+  const x = cv.getContext('2d');
+  const espacer = v => { try{ x.letterSpacing = v; }catch(e){} };
+
+  x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, L, hauteur);
+
+  // --- bandeau d'en-tête
+  x.fillStyle = '#10211F'; x.fillRect(0, 0, L, 232);
+  x.fillStyle = '#FFFFFF'; x.font = '600 46px ' + SANS; x.textAlign = 'left';
+  x.fillText(b.nom || ('Facture ' + svc(p.service).label.toLowerCase()), marge, 96, largeurUtile);
+  x.fillStyle = '#8FB2AB'; x.font = '26px ' + SANS;
+  const coord = [b.adresse, b.telephone].filter(Boolean).join(' · ');
+  if(coord) x.fillText(coord, marge, 140, largeurUtile);
+  x.font = '26px ' + MONO; espacer('2px');
+  x.fillText(numero + '  ·  ' + MOIS[p.mois] + ' ' + p.annee, marge, 192);
+  espacer('0px');
+
+  // --- locataire
+  let y = 232 + 62;
+  x.fillStyle = '#6B7A76'; x.font = '600 21px ' + SANS; espacer('2.5px');
+  x.fillText('LOCATAIRE', marge, y);
+  x.textAlign = 'right'; x.fillText('ÉTABLIE LE', L - marge, y);
+  espacer('0px'); x.textAlign = 'left';
+  x.fillStyle = '#16241F'; x.font = '600 38px ' + SANS;
+  x.fillText(l.loc.nom || '—', marge, y + 46, largeurUtile - 320);
+  x.textAlign = 'right'; x.font = '30px ' + SANS;
+  x.fillText(new Date().toLocaleDateString('fr-FR'), L - marge, y + 46);
+  x.textAlign = 'left';
+  if(l.loc.logement){
+    x.fillStyle = '#6B7A76'; x.font = '28px ' + SANS;
+    x.fillText(l.loc.logement, marge, y + 86);
+  }
+
+  // --- tableau
+  y = 452;
+  const lignes = [
+    ['Ancien index',            nb(l.ancien) + ' ' + c.unite,  false],
+    ['Nouvel index',            nb(l.nouveau) + ' ' + c.unite, false],
+    ['Consommation du mois',    nb(l.conso) + ' ' + c.unite,   true ],
+    ['Prix unitaire',           dec(c.pu) + ' F/' + c.unite,   false],
+    [nb(l.conso) + ' ' + c.unite + ' × ' + dec(c.pu) + ' F', nb(l.part) + ' FCFA', true]
+  ];
+  if(l.frais) lignes.push([c.fraisLibelle, '+ ' + nb(l.frais) + ' FCFA', true]);
+  x.strokeStyle = '#DDE2DE'; x.lineWidth = 2;
+  lignes.forEach(([gauche, droite, fort]) => {
+    x.fillStyle = fort ? '#16241F' : '#3D4B47';
+    x.font = (fort ? '600 30px ' : '30px ') + SANS; x.textAlign = 'left';
+    x.fillText(gauche, marge, y + 42, largeurUtile - 340);
+    x.fillStyle = fort ? '#1D4D4F' : '#16241F';
+    x.font = (fort ? '600 32px ' : '32px ') + MONO; x.textAlign = 'right';
+    x.fillText(droite, L - marge, y + 42);
+    y += 68;
+    x.beginPath(); x.moveTo(marge, y - 8); x.lineTo(L - marge, y - 8); x.stroke();
+  });
+
+  // --- montant à payer
+  y += 34;
+  x.fillStyle = '#10211F'; rectArrondi(x, marge, y, largeurUtile, 132, 20); x.fill();
+  x.fillStyle = '#8FB2AB'; x.font = '600 23px ' + SANS; x.textAlign = 'left'; espacer('3px');
+  x.fillText(l.regleLe ? 'MONTANT RÉGLÉ' : 'MONTANT À PAYER', marge + 34, y + 78);
+  espacer('0px');
+  x.fillStyle = '#FFFFFF'; x.font = '600 62px ' + MONO; x.textAlign = 'right';
+  x.fillText(nb(l.total) + ' F', L - marge - 34, y + 88);
+  y += 132;
+
+  // --- échéance ou reçu
+  y += 26;
+  if(l.regleLe){
+    x.fillStyle = '#E8F2EC'; rectArrondi(x, marge, y, largeurUtile, 84, 16); x.fill();
+    x.fillStyle = '#1F5238'; x.font = '600 28px ' + SANS; x.textAlign = 'center';
+    x.fillText('Réglé le ' + dateLongue(l.regleLe) + ' — merci.', L/2, y + 53);
+  }else if(p.dateLimite){
+    x.strokeStyle = '#C4432A'; x.lineWidth = 2; x.setLineDash([10, 8]);
+    rectArrondi(x, marge, y, largeurUtile, 84, 16); x.stroke(); x.setLineDash([]);
+    x.fillStyle = '#8C2E1B'; x.font = '600 28px ' + SANS; x.textAlign = 'center';
+    x.fillText('À régler au plus tard le ' + dateLongue(p.dateLimite), L/2, y + 53);
+  }
+  y += 110;
+
+  // --- mention
+  x.fillStyle = '#6B7A76'; x.font = '24px ' + SANS; x.textAlign = 'left';
+  lignesMention.forEach(ln => { x.fillText(ln, marge, y); y += 36; });
+
+  return cv;
+}
+
+function nomFichierFacture(pid, lid){
+  const {p, l, numero} = donneesFacture(pid, lid);
+  const propre = (l.loc.nom || 'locataire').normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase();
+  return numero + '-' + propre + '.png';
+}
+
+async function envoyerImage(pid, lid){
+  let cv;
+  try{ cv = imageFacture(pid, lid); }
+  catch(e){ alert("L'image n'a pas pu être créée. Vérifie que le relevé est complet."); return; }
+  const {p, l} = donneesFacture(pid, lid);
+  const nom = nomFichierFacture(pid, lid);
+  const tel = (l.loc.telephone || '').replace(/[^0-9]/g, '');
+  marquerEnvoyee(p.id, l.loc.id);
+
+  // 1. Pont natif Android (disponible une fois l'application emballée)
+  if(window.PontAndroid && window.PontAndroid.partagerImage){
+    window.PontAndroid.partagerImage(cv.toDataURL('image/png').split(',')[1], nom, tel, texteFacture(pid, lid));
+    return;
+  }
+
+  // 2. Partage natif du navigateur
+  const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+  if(blob && navigator.canShare){
+    try{
+      const fichier = new File([blob], nom, {type:'image/png'});
+      if(navigator.canShare({files:[fichier]})){
+        await navigator.share({files:[fichier], text: texteFacture(pid, lid)});
+        return;
+      }
+    }catch(e){ if(e && e.name === 'AbortError') return; }
+  }
+
+  // 3. Enregistrement puis envoi manuel
+  telechargerImage(cv, nom);
+  const ouvrir = confirm("Le partage direct n'est pas disponible ici. L'image a été enregistrée.\n\nOuvrir la conversation WhatsApp pour y joindre l'image ?");
+  if(ouvrir) window.open('https://wa.me/' + tel + '?text=' + encodeURIComponent(texteFacture(pid, lid)), '_blank');
+}
+function marquerEnvoyee(pid, lid){
+  const p = etat.periodes.find(x => x.id === pid);
+  if(!p.releves[lid]) p.releves[lid] = { ancien:'', nouveau:'' };
+  p.releves[lid].envoyeeLe = new Date().toISOString().slice(0,10);
+  enregistrer();
+}
+
+function imageReleveMois(pid){
+  const p = etat.periodes.find(x => x.id === pid);
+  const c = calculer(p);
+  const b = etat.bailleur;
+  const cpt = compteurDe(p.compteurId);
+  const L = 1080, marge = 72, largeurUtile = L - marge*2;
+  const ligneH = 92;
+  const hauteur = 340 + c.lignes.length * ligneH + 170;
+
+  const cv = document.createElement('canvas');
+  cv.width = L; cv.height = hauteur;
+  const x = cv.getContext('2d');
+  const espacer = v => { try{ x.letterSpacing = v; }catch(e){} };
+
+  x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, L, hauteur);
+
+  // --- bandeau d'en-tête
+  x.fillStyle = '#10211F'; x.fillRect(0, 0, L, 232);
+  x.fillStyle = '#FFFFFF'; x.font = '600 42px ' + SANS; x.textAlign = 'left';
+  x.fillText((b.nom || 'Relevé') + ' — ' + (cpt.nom || 'Compteur'), marge, 92, largeurUtile);
+  x.fillStyle = '#8FB2AB'; x.font = '26px ' + SANS;
+  x.fillText(svc(p.service).label + ' · ' + svc(p.service).factureNom, marge, 138, largeurUtile);
+  x.font = '26px ' + MONO; espacer('2px');
+  x.fillText(MOIS[p.mois] + ' ' + p.annee, marge, 190);
+  espacer('0px');
+
+  // --- en-tête du tableau
+  let y = 232 + 60;
+  x.fillStyle = '#6B7A76'; x.font = '600 20px ' + SANS; espacer('2px');
+  x.fillText('LOCATAIRE', marge, y);
+  x.textAlign = 'right';
+  x.fillText('ANCIEN', marge + largeurUtile*0.46, y);
+  x.fillText('NOUVEAU', marge + largeurUtile*0.68, y);
+  x.fillText('À PAYER', L - marge, y);
+  espacer('0px'); x.textAlign = 'left';
+
+  // --- lignes
+  y += 26;
+  x.strokeStyle = '#DDE2DE'; x.lineWidth = 2;
+  c.lignes.forEach(l => {
+    x.beginPath(); x.moveTo(marge, y); x.lineTo(L - marge, y); x.stroke();
+    const yTexte = y + 56;
+    x.fillStyle = '#16241F'; x.font = '600 30px ' + SANS; x.textAlign = 'left';
+    x.fillText(l.loc.nom || '—', marge, yTexte, largeurUtile*0.44);
+    if(l.loc.logement){
+      x.fillStyle = '#6B7A76'; x.font = '22px ' + SANS;
+      x.fillText(l.loc.logement, marge, yTexte + 26, largeurUtile*0.44);
+    }
+    x.textAlign = 'right'; x.font = '28px ' + MONO;
+    x.fillStyle = '#3D4B47';
+    x.fillText(nb(l.ancien), marge + largeurUtile*0.46, yTexte);
+    x.fillText(l.nouveau === null ? '—' : nb(l.nouveau), marge + largeurUtile*0.68, yTexte);
+    x.fillStyle = l.nouveau === null ? '#B0B8B4' : '#1D4D4F';
+    x.font = '600 30px ' + MONO;
+    x.fillText(l.nouveau === null ? '—' : nb(l.total) + ' F', L - marge, yTexte);
+    x.textAlign = 'left';
+    y += ligneH;
+  });
+  x.beginPath(); x.moveTo(marge, y); x.lineTo(L - marge, y); x.stroke();
+
+  // --- totaux
+  y += 56;
+  x.fillStyle = '#6B7A76'; x.font = '28px ' + SANS; x.textAlign = 'left';
+  x.fillText('Consommation totale', marge, y);
+  x.textAlign = 'right'; x.font = '600 28px ' + MONO; x.fillStyle = '#16241F';
+  x.fillText(nb(c.totalConso) + ' ' + c.unite, L - marge, y);
+
+  y += 48;
+  x.textAlign = 'left'; x.font = '28px ' + SANS; x.fillStyle = '#6B7A76';
+  x.fillText('Facturé aux locataires', marge, y);
+  x.textAlign = 'right'; x.font = '600 30px ' + MONO; x.fillStyle = '#1D4D4F';
+  x.fillText(nb(c.totalAEncaisser || c.totalFacture) + ' F', L - marge, y);
+
+  return cv;
+}
+function nomFichierReleveMois(pid){
+  const p = etat.periodes.find(x => x.id === pid);
+  const cpt = compteurDe(p.compteurId);
+  const propre = (cpt.nom || 'compteur').normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase();
+  return svc(p.service).prefixeFacture + '-' + p.annee + String(p.mois+1).padStart(2,'0') + '-' + propre + '-releve.png';
+}
+function enregistrerReleveMois(pid, silencieux){
+  let cv;
+  try{ cv = imageReleveMois(pid); }
+  catch(e){ if(!silencieux) alert("L'image n'a pas pu être créée."); return false; }
+  const nom = nomFichierReleveMois(pid);
+  if(window.PontAndroid && window.PontAndroid.enregistrerGalerie){
+    window.PontAndroid.enregistrerGalerie(cv.toDataURL('image/png').split(',')[1], nom);
+  } else {
+    telechargerImage(cv, nom);
+  }
+  if(!silencieux) alert('Relevé du mois enregistré en image (' + nom + ').');
+  return true;
+}
+function enregistrerImage(pid, lid){
+  let cv;
+  try{ cv = imageFacture(pid, lid); }
+  catch(e){ alert("L'image n'a pas pu être créée. Vérifie que le relevé est complet."); return; }
+  const nom = nomFichierFacture(pid, lid);
+  if(window.PontAndroid && window.PontAndroid.enregistrerGalerie){
+    window.PontAndroid.enregistrerGalerie(cv.toDataURL('image/png').split(',')[1], nom);
+    return;
+  }
+  telechargerImage(cv, nom);
+}
+function telechargerImage(cv, nom){
+  cv.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = nom;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }, 'image/png');
+}
+function apercuImage(pid, lid){
+  let cv;
+  try{ cv = imageFacture(pid, lid); }
+  catch(e){ alert("L'image n'a pas pu être créée."); return; }
+  const f = document.getElementById('apercu');
+  f.innerHTML = '';
+  cv.style.width = '100%'; cv.style.borderRadius = '12px'; cv.style.border = '1px solid var(--trait)';
+  f.appendChild(cv);
+}
+
+function texteFacture(pid, lid){
+  const {p, c, l, numero} = donneesFacture(pid, lid);
+  const limite = dateLongue(p.dateLimite);
+  return [
+    '*' + (etat.bailleur.nom || ('Facture ' + svc(p.service).label.toLowerCase())) + '*',
+    numero + ' — ' + MOIS[p.mois] + ' ' + p.annee,
+    '',
+    'Locataire : ' + l.loc.nom + (l.loc.logement ? ' (' + l.loc.logement + ')' : ''),
+    'Ancien index : ' + nb(l.ancien) + ' ' + c.unite,
+    'Nouvel index : ' + nb(l.nouveau) + ' ' + c.unite,
+    'Consommation : ' + nb(l.conso) + ' ' + c.unite,
+    'Prix unitaire : ' + dec(c.pu) + ' FCFA/' + c.unite,
+    'Quote-part ' + svc(p.service).label.toLowerCase() + ' : ' + nb(l.part) + ' FCFA',
+    l.frais ? c.fraisLibelle + ' : + ' + nb(l.frais) + ' FCFA' : null,
+    '',
+    l.regleLe ? '*Réglé : ' + nb(l.total) + ' FCFA* le ' + dateLongue(l.regleLe)
+              : '*À payer : ' + nb(l.total) + ' FCFA*',
+    (!l.regleLe && limite) ? 'Date limite : ' + limite : null,
+    '',
+    c.mode === 'fixe'
+      ? 'Prix unitaire appliqué : ' + dec(c.pu) + ' FCFA/' + c.unite + '.'
+      : 'Base de calcul : facture ' + c.factureNom + ' de ' + nb(c.montant) + ' FCFA pour ' + nb(c.totalConso) + ' ' + c.unite + '.'
+  ].filter(t => t !== null).join('\n');
+}
+function copierTexte(){
+  const t = texteFacture();
+  if(navigator.clipboard) navigator.clipboard.writeText(t).then(() => alert('Texte copié.'));
+  else { prompt('Copie ce texte :', t); }
+}
+
+/* ---------- locataires ---------- */
+function vueLocataires(){
+  entete('Relevé', 'Locataires');
+  const locs = etat.locataires
+    .map((l,i) => ({l,i}))
+    .filter(x => x.l.compteurId === etat.compteurActif);
+
+  vue.innerHTML = selecteurCompteur() + (locs.map(({l,i}) => `
+    <div class="carte">
+      <div class="champ"><label>Nom</label>
+        <input value="${esc(l.nom)}" placeholder="Nom du locataire"
+          onchange="majLocataire(${i},'nom',this.value)"></div>
+      <div class="champ"><label>Logement</label>
+        <input value="${esc(l.logement||'')}" placeholder="Chambre 3"
+          onchange="majLocataire(${i},'logement',this.value)"></div>
+      <div class="rangee">
+        <div class="champ"><label>${SERVICES.electricite.icone} Index élec. départ</label>
+          <input type="number" inputmode="numeric" value="${l.indexDepartElec||0}"
+            onchange="majLocataire(${i},'indexDepartElec',this.value)"></div>
+        <div class="champ"><label>${SERVICES.eau.icone} Index eau départ</label>
+          <input type="number" inputmode="numeric" value="${l.indexDepartEau||0}"
+            onchange="majLocataire(${i},'indexDepartEau',this.value)"></div>
+      </div>
+      <div class="champ" style="margin-bottom:0"><label>Téléphone (WhatsApp)</label>
+        <input type="tel" value="${esc(l.telephone||'')}" placeholder="228 90 00 00 00"
+          onchange="majLocataire(${i},'telephone',this.value)"></div>
+      <button class="btn danger" onclick="supprimerLocataire(${i})">Retirer</button>
+    </div>`).join('')
+    || `<div class="vide"><h3>Aucun locataire</h3>
+        <p>Chaque locataire correspond à un sous-compteur électrique et à un sous-compteur d'eau.</p></div>`)
+    + `<button class="btn" onclick="ajouterLocataire()">Ajouter un locataire</button>`;
+}
+function ajouterLocataire(){
+  etat.locataires.push({ id:id(), compteurId: etat.compteurActif,
+    nom:'', logement:'', telephone:'', indexDepartElec:0, indexDepartEau:0 });
+  enregistrer(); rendre();
+  window.scrollTo(0, document.body.scrollHeight);
+}
+function majLocataire(i, champ, valeur){
+  const champsNombre = ['indexDepartElec', 'indexDepartEau'];
+  etat.locataires[i][champ] = champsNombre.includes(champ) ? Number(valeur)||0 : valeur;
+  enregistrer();
+}
+function supprimerLocataire(i){
+  if(!confirm('Retirer ' + (etat.locataires[i].nom || 'ce locataire') + ' ? Ses relevés passés restent enregistrés.')) return;
+  etat.locataires.splice(i,1); enregistrer(); rendre();
+}
+
+/* ---------- réglages ---------- */
+function vueVerrouillage(){
+  document.getElementById('eyebrow').textContent = 'Relevé';
+  document.getElementById('titre').textContent = "Période d'essai terminée";
+  const lien = 'https://wa.me/' + CONTACT_TEL + '?text=' + encodeURIComponent(messageActivationWhatsApp());
+  vue.innerHTML = `
+  <div class="vide">
+    <h3>Ton mois d'essai est écoulé</h3>
+    <p>Pour continuer à utiliser l'application, choisis une formule : Électricité seule ou Eau seule à ${nb(PRIX_MONO)} FCFA/an, ou l'abonnement Général (électricité + eau) à ${nb(PRIX_GENERAL)} FCFA/an.</p>
+  </div>
+
+  <div class="carte">
+    <label>Identifiant de cet appareil</label>
+    <div style="font-family:var(--mono);font-size:1.15rem;letter-spacing:.06em;
+      background:var(--petrole-clair);padding:.7rem .8rem;border-radius:10px;text-align:center">
+      ${esc(licence.deviceId)}
+    </div>
+    <button class="btn fantome" style="margin-top:.5rem" onclick="copierIdentifiant()">Copier l'identifiant</button>
+  </div>
+
+  <a class="btn" style="display:block;text-align:center;text-decoration:none;margin-top:.9rem"
+     href="${lien}">Demander l'activation par WhatsApp</a>
+
+  <div class="carte" style="margin-top:1.1rem">
+    <label>Code reçu de HASNEM</label>
+    <input id="code-licence" placeholder="20270728-1-G-9F3C2A1B" style="font-family:var(--mono);text-transform:uppercase">
+    <button class="btn secondaire" style="margin-top:.6rem" onclick="activerLicence()">Activer</button>
+  </div>`;
+}
+
+function vueReglages(){
+  entete('Relevé', 'Réglages');
+  const b = etat.bailleur;
+  vue.innerHTML = `
+  <div class="carte">
+    <div class="champ"><label>Nom affiché sur les factures</label>
+      <input value="${esc(b.nom)}" placeholder="Résidence Akwaba"
+        onchange="majBailleur('nom',this.value)"></div>
+    <div class="champ"><label>Adresse</label>
+      <input value="${esc(b.adresse)}" placeholder="Bè-Kpota, Lomé"
+        onchange="majBailleur('adresse',this.value)"></div>
+    <div class="champ" style="margin-bottom:0"><label>Téléphone</label>
+      <input type="tel" value="${esc(b.telephone)}" placeholder="90 00 00 00"
+        onchange="majBailleur('telephone',this.value)"></div>
+  </div>
+
+  <h3 style="margin:1.3rem 0 .6rem;font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;color:var(--gris)">Compteurs</h3>
+  <p class="sous" style="margin:-.4rem 0 .8rem">Un compteur = un groupe de locataires, avec ses réglages électricité et eau propres. Le nom du bailleur ci-dessus reste le même sur toutes les factures.</p>
+  ${etat.compteurs.map(c => blocCompteur(c)).join('')}
+  <p class="sous" style="margin:.2rem 0 .5rem">${etat.compteurs.length} compteur${etat.compteurs.length>1?'s':''} sur ${licenceInfo().compteursAutorises} inclus dans l'abonnement.</p>
+  <button class="btn secondaire" onclick="ajouterCompteur()">Ajouter un compteur</button>
+
+  <div class="carte" style="margin-top:1.3rem">
+    <h3 style="font-size:1rem;margin-bottom:.5rem">Sauvegarde</h3>
+    <p class="sous">Tout est stocké uniquement sur cet appareil — en cas de perte ou de casse du téléphone sans sauvegarde récente, les relevés sont perdus.</p>
+    ${statutSauvegarde()}
+    <button class="btn secondaire" onclick="exporter()">Exporter mes données</button>
+    <button class="btn fantome" onclick="document.getElementById('fichier').click()">Importer une sauvegarde</button>
+    <input type="file" id="fichier" accept="application/json" style="display:none" onchange="importer(this)">
+  </div>
+
+  ${blocLicenceReglages()}`;
+}
+function blocCompteur(c){
+  const nbLoc = etat.locataires.filter(l => l.compteurId === c.id).length;
+  return `
+  <div class="carte">
+    <div class="champ" style="margin-bottom:0"><label>Nom du compteur</label>
+      <input value="${esc(c.nom)}" placeholder="Immeuble A"
+        onchange="majCompteur('${c.id}','nom',this.value)"></div>
+  </div>
+  ${blocReglagesService(c, 'electricite')}
+  ${blocReglagesService(c, 'eau')}
+  ${etat.compteurs.length > 1
+    ? `<button class="btn danger" style="margin:-.4rem 0 1rem" onclick="supprimerCompteur('${c.id}')">
+         Supprimer ce compteur${nbLoc ? ' (' + nbLoc + ' locataire' + (nbLoc>1?'s':'') + ')' : ''}
+       </button>`
+    : ''}`;
+}
+function blocReglagesService(c, sid){
+  const s = svc(sid);
+  const r = c.services[sid];
+  return `
+  <div class="carte">
+    <div class="champ" style="margin-bottom:.5rem"><label style="font-size:.95rem">${s.icone} ${esc(s.label)} — ${esc(c.nom)}</label></div>
+
+    <div class="champ" style="margin-bottom:.4rem"><label>Mode de calcul par défaut</label>
+      <select onchange="majCompteurService('${c.id}','${sid}','modeDefaut', this.value)">
+        <option value="repartition" ${r.modeDefaut!=='fixe'?'selected':''}>Répartir la facture ${esc(s.factureNom)}</option>
+        <option value="fixe" ${r.modeDefaut==='fixe'?'selected':''}>Prix unitaire fixe</option>
+      </select></div>
+    ${r.modeDefaut === 'fixe' ? `<div class="champ" style="margin-bottom:.4rem">
+      <label>Prix unitaire par défaut (FCFA / ${s.unite})</label>
+      <input type="number" inputmode="decimal" step="any" value="${r.puDefaut||''}"
+        placeholder="0" onchange="majCompteurService('${c.id}','${sid}','puDefaut', this.value)"></div>` : ''}
+    <p class="sous">Appliqué à chaque nouveau mois de ce compteur. Modifiable mois par mois.</p>
+
+    <div class="champ" style="margin-top:.7rem"><label>Frais ajoutés à chaque facture (FCFA)</label>
+      <input type="number" inputmode="numeric" value="${r.fraisDefaut||0}"
+        onchange="majCompteurService('${c.id}','${sid}','fraisDefaut', this.value)"></div>
+    <div class="champ" style="margin-bottom:.4rem"><label>Libellé de ces frais</label>
+      <input value="${esc(r.fraisLibelle||'')}" placeholder="${esc(s.fraisLibelleDefaut)}"
+        onchange="majCompteurService('${c.id}','${sid}','fraisLibelle', this.value)"></div>
+
+    <div class="champ" style="margin-bottom:0"><label>Arrondi des montants</label>
+      <select onchange="majCompteurService('${c.id}','${sid}','arrondi', this.value)">
+        <option value="1" ${r.arrondi==1?'selected':''}>Au franc près</option>
+        <option value="5" ${r.arrondi==5?'selected':''}>Au 5 FCFA (recommandé)</option>
+        <option value="25" ${r.arrondi==25?'selected':''}>Au 25 FCFA</option>
+      </select></div>
+  </div>`;
+}
+function ajouterCompteur(){
+  const info = licenceInfo();
+  if(etat.compteurs.length >= info.compteursAutorises){
+    demanderCompteurSupplementaire();
+    return;
+  }
+  const c = { id:id(), nom:'Nouveau compteur',
+    services: { electricite: reglagesServiceDefaut('electricite'), eau: reglagesServiceDefaut('eau') } };
+  etat.compteurs.push(c);
+  etat.compteurActif = c.id;
+  enregistrer(); rendre();
+  window.scrollTo(0, document.body.scrollHeight);
+}
+function demanderCompteurSupplementaire(){
+  const info = licenceInfo();
+  const msg = "Bonjour, je souhaite ajouter un compteur supplémentaire pour l'application Relevé Électricité.\n" +
+    "Identifiant appareil : " + licence.deviceId + "\n" +
+    "Abonnement actuel : " + info.planLabel + " (" + info.compteursAutorises + " compteur" + (info.compteursAutorises>1?'s':'') + " autorisé" + (info.compteursAutorises>1?'s':'') + ")\n" +
+    "Coût de l'ajout : " + nb(PRIX_COMPTEUR_SUPP) + " FCFA de plus par an.";
+  const lien = 'https://wa.me/' + CONTACT_TEL + '?text=' + encodeURIComponent(msg);
+  const ouvrir = confirm(
+    "Ton abonnement (" + info.planLabel + ") inclut " + info.compteursAutorises + " compteur" + (info.compteursAutorises>1?'s':'') + ".\n\n" +
+    "Ajouter un compteur supplémentaire coûte " + nb(PRIX_COMPTEUR_SUPP) + " FCFA de plus par an.\n\n" +
+    "Contacter HASNEM par WhatsApp pour l'activer ?"
+  );
+  if(ouvrir) window.open(lien, '_blank');
+}
+function majCompteurService(cid, sid, champ, valeur){
+  const r = compteurDe(cid).services[sid];
+  r[champ] = (champ === 'arrondi' || champ === 'fraisDefaut' || champ === 'puDefaut')
+    ? Number(valeur) || 0 : valeur;
+  enregistrer();
+  if(champ === 'modeDefaut') rendre();
+}
+function majCompteur(cid, champ, valeur){
+  compteurDe(cid)[champ] = valeur;
+  enregistrer();
+}
+function supprimerCompteur(cid){
+  if(etat.compteurs.length <= 1){ alert('Impossible de supprimer le seul compteur.'); return; }
+  const c = compteurDe(cid);
+  if(etat.locataires.some(l => l.compteurId === cid)){
+    alert("Ce compteur a encore des locataires. Retire-les d'abord, dans l'onglet Locataires, avant de le supprimer.");
+    return;
+  }
+  if(!confirm('Supprimer le compteur « ' + (c.nom || 'Sans nom') + ' » ? Ses mois passés restent enregistrés mais ne seront plus accessibles depuis l\'application.')) return;
+  etat.compteurs = etat.compteurs.filter(x => x.id !== cid);
+  if(etat.compteurActif === cid) etat.compteurActif = etat.compteurs[0].id;
+  enregistrer(); rendre();
+}
+function blocLicenceReglages(){
+  const info = licenceInfo();
+  const lien = 'https://wa.me/' + CONTACT_TEL + '?text=' + encodeURIComponent(messageActivationWhatsApp());
+  const statut = info.abonneActif
+    ? 'Abonnement actif jusqu\'au ' + dateLongue(licence.dateFin) + '.'
+    : info.essaiActif
+      ? 'Essai gratuit : ' + info.joursRestantsEssai + ' jour' + (info.joursRestantsEssai>1?'s':'') + ' restant' + (info.joursRestantsEssai>1?'s':'') + '.'
+      : "Essai terminé.";
+  return `
+  <div class="carte">
+    <h3 style="font-size:1rem;margin-bottom:.5rem">Licence</h3>
+    <p class="sous">${statut}</p>
+    <p class="sous">Formule : ${esc(info.planLabel)}${info.abonneActif ? '' : ' (pendant l\'essai)'}.</p>
+    <p class="sous">Compteurs inclus dans l'abonnement : ${info.compteursAutorises} (tu en utilises actuellement ${etat.compteurs.length}).</p>
+    <p class="sous">Identifiant appareil : <span style="font-family:var(--mono)">${esc(licence.deviceId)}</span></p>
+    <a class="btn secondaire" style="display:block;text-align:center;text-decoration:none;margin-top:.6rem"
+       href="${lien}">Demander l'activation par WhatsApp</a>
+    <div class="champ" style="margin-top:.7rem;margin-bottom:0">
+      <label>Code reçu de HASNEM</label>
+      <input id="code-licence" placeholder="20270728-1-G-9F3C2A1B" style="font-family:var(--mono);text-transform:uppercase">
+      <button class="btn fantome" style="margin-top:.4rem" onclick="activerLicence()">Activer</button>
+    </div>
+  </div>`;
+}
+function majBailleur(champ, valeur){ etat.bailleur[champ] = valeur; enregistrer(); }
+
+function statutSauvegarde(){
+  if(!etat.derniereSauvegardeLe){
+    return `<div class="alerte" style="margin:.4rem 0 .8rem">Aucune sauvegarde n'a encore été faite. Exporte tes données dès maintenant.</div>`;
+  }
+  const jours = Math.floor((new Date(new Date().toDateString()) - new Date(etat.derniereSauvegardeLe + 'T00:00:00')) / 86400000);
+  if(jours > 21){
+    return `<div class="alerte" style="margin:.4rem 0 .8rem">Dernière sauvegarde il y a ${jours} jours (le ${dateLongue(etat.derniereSauvegardeLe)}). Pense à en refaire une.</div>`;
+  }
+  return `<p class="sous" style="color:var(--ok)">Dernière sauvegarde : ${jours === 0 ? "aujourd'hui" : 'il y a ' + jours + ' jour' + (jours>1?'s':'')} (${dateLongue(etat.derniereSauvegardeLe)}).</p>`;
+}
+function exporter(){
+  const blob = new Blob([JSON.stringify(etat, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'releve-electricite-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click(); URL.revokeObjectURL(a.href);
+  etat.derniereSauvegardeLe = new Date().toISOString().slice(0,10);
+  enregistrer();
+  alert("Fichier de sauvegarde enregistré.\n\nPour être vraiment à l'abri d'une perte du téléphone, envoie-le maintenant ailleurs : à toi-même sur WhatsApp, sur Google Drive, ou par e-mail. Ouvre-le depuis tes Téléchargements et utilise le bouton Partager.");
+  rendre();
+}
+function importer(input){
+  const f = input.files[0]; if(!f) return;
+  const lecteur = new FileReader();
+  lecteur.onload = e => {
+    try{
+      const d = JSON.parse(e.target.result);
+      if(!d.locataires || !d.periodes) throw new Error('format');
+      if(!confirm('Remplacer les données actuelles par cette sauvegarde ?')) return;
+      etat = migrer(d); enregistrer(); rendre();
+    }catch(err){ alert("Fichier illisible. Choisis une sauvegarde exportée depuis cette application."); }
+  };
+  lecteur.readAsText(f);
+  input.value = '';
+}
+
+/* ---------- démarrage ---------- */
+document.querySelectorAll('#nav button').forEach(b =>
+  b.addEventListener('click', () => {
+    onglet = b.dataset.onglet; periodeOuverte = null; factureOuverte = null;
+    rendre(); window.scrollTo(0,0);
+  }));
+rendre();
+</script>
+</body>
+</html>
